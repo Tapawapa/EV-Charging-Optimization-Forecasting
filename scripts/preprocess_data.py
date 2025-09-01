@@ -33,6 +33,7 @@ for file_path in all_afdc_files:
 # --- 1. Define the columns you want to KEEP for your model ---
 # It's easier and safer to specify what you need, rather than what you don't.
 columns_to_keep = [
+    'ID',
     'Latitude',
     'Longitude',
     'State', # We'll use this to filter, then it can be dropped if desired
