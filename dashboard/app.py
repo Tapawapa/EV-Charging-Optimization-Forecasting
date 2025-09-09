@@ -3,7 +3,9 @@ from dash import dcc, html
 import plotly.express as px
 import geopandas as gpd
 import pandas as pd
-
+from dotenv import load_dotenv
+import os
+load_dotenv()
 # Loading the data
 # Make sure to use the correct path to your GeoJSON file
 file_path = r"C:\EV Project\EV-Charging-Optimization-Forecasting\data\processed\top_charging_locations.geojson"
@@ -35,12 +37,12 @@ gdf['centroid_geom'] = projected_gdf['geometry'].centroid.to_crs("EPSG:4326")
 gdf['lat'] = gdf['centroid_geom'].y
 gdf['lon'] = gdf['centroid_geom'].x
 
-# --- FIX ENDS HERE ---
+
 
 
 # Using a public token for MapLibre styles
 # You can get your own free token from Mapbox
-mapbox_token = "pk.eyJ1IjoidGFwYXdhcGEiLCJhIjoiY21mZDBzY25kMDQ1ZDJrcTd1cWh3b3EyeSJ9.sLxHSZ3pdmjD6imuJqAPKA"
+mapbox_token = os.getenv("MAPBOX_TOKEN")
 px.set_mapbox_access_token(mapbox_token)
 
 # Creating the map using the corrected latitude and longitude columns

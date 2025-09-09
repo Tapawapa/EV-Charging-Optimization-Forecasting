@@ -13,7 +13,7 @@ PROCESSED_DATA_PATH = "data/processed/"
 INPUT_FILE_PATH = os.path.join(PROCESSED_DATA_PATH, INPUT_FILENAME)
 OUTPUT_FILE_PATH = os.path.join(PROCESSED_DATA_PATH, OUTPUT_FILENAME)
 
-NUMBER_OF_TOP_SPOTS = 100
+NUMBER_OF_TOP_SPOTS = 200
 
 def main():
     #this function filters the top locations and saves them to a new file
