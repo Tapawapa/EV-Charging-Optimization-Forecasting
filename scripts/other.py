@@ -61,7 +61,7 @@ def main():
         #Use joblib to load the model saved from forecast_demand.py
         model = joblib.load(os.path.join(MODELS_PATH, "xgb_year_prediction_model.pkl"))
 
-        print("Successfully loaded all datasets.")
+        print("Successfully loaded all datasets9.")
     except FileNotFoundError as e:
         print(f"ERROR: {e}. Please ensure all required files are present.")
         return
@@ -81,42 +81,25 @@ def main():
     print("Creating prediction grid...")
     grid_gdf = create_prediction_grid(gdf_roads)
     #We will use the center point of each grid cell for our calculations
-    # Note: The centroid is not needed for sjoin_nearest, but we keep it in case you need it later.
     grid_gdf['centroid']= grid_gdf.geometry.centroid
     print(f"Created grid with {len(grid_gdf)} potential locations.")
 
     #for every cell in our grid we also need to calculate the same features our model was trained on
     print("Calculating features for each grid cell...")
 
-    # Temporarily set the active geometry to the centroid for more accurate distance calcs.
-    grid_gdf = grid_gdf.set_geometry('centroid')
+    tqdm.pandas()  # Enable tqdm progress bar for pandas operations
 
+    # Calculate the distance from the center of each grid cell to the nearest major road.
+    print("  - Calculating distance to nearest major road...")
+    grid_gdf['dist_to_major_road_m'] = grid_gdf['centroid'].progress_apply(
+        lambda point: gdf_major_roads.distance(point).min()
+    )
 
-    # OPTIMIZED: Calculate distance to nearest major road using sjoin_nearest.
-    print("  - Calculating distance to nearest major road (optimized)...")
-    # This single command replaces the slow loop. It finds the nearest road for every grid cell
-    # and automatically calculates the distance, adding it to a new column.
-    grid_gdf = gpd.sjoin_nearest(grid_gdf, gdf_major_roads[['geometry']], how="left", distance_col="dist_to_major_road_m")
-    # sjoin_nearest can create duplicates if a grid cell is equidistant to multiple roads.
-    # This line removes those duplicates, keeping the first match for each cell.
-    grid_gdf = grid_gdf.loc[~grid_gdf.index.duplicated(keep='first')]
-    # **FIX:** Drop the temporary 'index_right' column created by the join.
-    grid_gdf = grid_gdf.drop(columns=['index_right'])
-
-
-    # OPTIMIZED: Calculate distance to nearest existing station using sjoin_nearest.
-    print("  - Calculating distance to nearest existing station (optimized)...")
-    # We use the same highly efficient technique to find the nearest existing station.
-    grid_gdf = gpd.sjoin_nearest(grid_gdf, gdf_stations[['geometry']], how="left", distance_col="dist_to_nearest_station_m")
-    # Again, we remove any potential duplicates to ensure our data is clean.
-    grid_gdf = grid_gdf.loc[~grid_gdf.index.duplicated(keep='first')]
-    # **FIX:** And we drop the new 'index_right' column from this join as well.
-    grid_gdf = grid_gdf.drop(columns=['index_right'])
-
-
-    # Switch the active geometry back to the polygons before buffering and saving.
-    grid_gdf = grid_gdf.set_geometry('geometry')
-
+    # Calculate the distance from the center of each grid cell to the nearest EXISTING station.
+    print("  - Calculating distance to nearest existing station...")
+    grid_gdf['dist_to_nearest_station_m'] = grid_gdf['centroid'].progress_apply(
+        lambda point: gdf_stations.distance(point).min()
+    )
 
     # Calculate how many points of interest (shops, etc.) are within a 1.5-mile radius.
     print("  - Calculating POI density...")
@@ -168,7 +151,7 @@ def main():
     except Exception as e:
         print(f"An error occurred while saving the output file: {e}")
 
-# This ensures the 'main' function runs when you execute the script from your terminal.
+
 if __name__ == "__main__":
     main()
 
